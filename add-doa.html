@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إضافة أدعية جديدة</title>
+    <style>
+        :root { --primary: #8e44ad; --dark: #2c3e50; --bg: #f5f0f9; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 20px; }
+        .container { max-width: 700px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--dark); border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        
+        .doa-card { border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 15px; background: #fafafa; position: relative; }
+        .doa-card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: var(--primary); }
+
+        .btn { cursor: pointer; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; transition: 0.3s; width: 100%; }
+        .btn-add { background: var(--dark); color: white; margin-bottom: 15px; }
+        .btn-generate { background: var(--primary); color: white; font-size: 1.2rem; }
+        .btn-copy { background: #3498db; color: white; margin-bottom: 10px; width: auto; font-size: 0.8rem; }
+        
+        #resultSection { display: none; }
+        .json-box { background: #2c3e50; color: #fff; padding: 15px; border-radius: 8px; direction: ltr; text-align: left; overflow-x: auto; white-space: pre-wrap; font-family: monospace; margin-top: 10px; border: 1px solid #1a252f; }
+        .info-row { background: #eee; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="mainContainer">
+    <h1>إضافة مجموعة أدعية</h1>
+    
+    <div class="input-group">
+        <label>عنوان مجموعة الأدعية (مثلاً: أدعية نبوية):</label>
+        <input type="text" id="doaTitle" placeholder="اكتب العنوان هنا..." oninput="updateFranco()">
+        <p style="font-size: 0.8rem; color: #666;">اسم الملف المقترح: <span id="francoName" style="color:var(--primary)">...</span></p>
+    </div>
+
+    <hr>
+
+    <div id="doaList">
+        <div class="doa-card">
+            <h3>الدعاء #1</h3>
+            <textarea class="d-text" rows="3" placeholder="اكتب نص الدعاء هنا..."></textarea>
+        </div>
+    </div>
+
+    <button class="btn btn-add" onclick="addNewDoa()">+ إضافة دعاء آخر</button>
+    <button class="btn btn-generate" onclick="generateDoaJSON()">توليد كود الـ JSON</button>
+</div>
+
+<div class="container" id="resultSection">
+    <h1>تم التوليد بنجاح ✅</h1>
+    <div class="info-row">العنوان: <span id="resArabic"></span></div>
+    <div class="info-row">اسم الملف: <span id="resFranco"></span></div>
+    
+    <h3 style="margin-top:20px;">1. كود الأدعية فقط (كما طلبت):</h3>
+    <button class="btn btn-copy" onclick="copyCode('jsonOutput1')">نسخ قائمة الأدعية</button>
+    <div class="json-box" id="jsonOutput1"></div>
+
+    <h3 style="margin-top:20px;">2. الملف الكامل (بيانات + أدعية):</h3>
+    <button class="btn btn-copy" onclick="copyCode('jsonOutput2')">نسخ الملف الكامل</button>
+    <div class="json-box" id="jsonOutput2"></div>
+    
+    <button class="btn" style="background:#7f8c8d; color:white; margin-top:20px;" onclick="location.reload()">إنشاء ملف جديد</button>
+</div>
+
+<script>
+    let doaCount = 1;
+
+    function toFranco(text) {
+        const map = {'ا':'a','أ':'a','إ':'e','ب':'b','ت':'t','ث':'th','ج':'g','ح':'7','خ':'kh','د':'d','ذ':'z','ر':'r','ز':'z','س':'s','ش':'sh','ص':'s','ض':'d','ط':'t','ظ':'z','ع':'3','غ':'gh','ف':'f','ق':'q','ك':'k','ل':'l','م':'m','ن':'n','ه':'h','و':'w','ي':'y','ة':'h',' ':'_'};
+        return text.split('').map(char => map[char] || char).join('').toLowerCase() + ".json";
+    }
+
+    function updateFranco() {
+        const title = document.getElementById('doaTitle').value;
+        document.getElementById('francoName').innerText = toFranco(title);
+    }
+
+    function addNewDoa() {
+        doaCount++;
+        const card = `
+            <div class="doa-card">
+                <h3>الدعاء #${doaCount}</h3>
+                <textarea class="d-text" rows="3" placeholder="اكتب نص الدعاء هنا..."></textarea>
+            </div>`;
+        document.getElementById('doaList').insertAdjacentHTML('beforeend', card);
+    }
+
+    function generateDoaJSON() {
+        const title = document.getElementById('doaTitle').value;
+        const franco = toFranco(title);
+        const doaArray = [];
+        
+        document.querySelectorAll('.d-text').forEach(t => {
+            if(t.value.trim() !== "") {
+                // التعديل هنا: إضافة النص داخل كائن { "text": ... }
+                doaArray.push({ "text": t.value });
+            }
+        });
+
+        const fullJson = {
+            "category": title,
+            "fileName": franco,
+            "total_items": doaArray.length,
+            "data": doaArray
+        };
+
+        document.getElementById('mainContainer').style.display = 'none';
+        document.getElementById('resultSection').style.display = 'block';
+        
+        document.getElementById('resArabic').innerText = title;
+        document.getElementById('resFranco').innerText = franco;
+        
+        // عرض الصندوق الأول (المصفوفة فقط)
+        document.getElementById('jsonOutput1').innerText = JSON.stringify(doaArray, null, 2);
+        
+        // عرض الصندوق الثاني (الملف الكامل)
+        document.getElementById('jsonOutput2').innerText = JSON.stringify(fullJson, null, 2);
+    }
+
+    function copyCode(id) {
+        const text = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(text);
+        alert("تم النسخ بنجاح!");
+    }
+</script>
+
+</body>
+</html>
