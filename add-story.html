@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إضافة قصة جديدة</title>
+    <style>
+        :root { --primary: #e67e22; --dark: #2c3e50; --bg: #fdfaf6; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 20px; line-height: 1.6; }
+        .container { max-width: 850px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--dark); border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        
+        .input-group { margin-bottom: 25px; }
+        label { display: block; font-weight: bold; margin-bottom: 10px; font-size: 1.1rem; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        textarea { width: 100%; padding: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; resize: vertical; min-height: 300px; line-height: 1.8; }
+        
+        .btn { cursor: pointer; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; transition: 0.3s; width: 100%; }
+        .btn-generate { background: var(--primary); color: white; font-size: 1.2rem; margin-top: 10px; }
+        .btn-copy { background: #3498db; color: white; margin-bottom: 15px; width: auto; }
+        
+        #resultSection { display: none; }
+        .json-box { background: #2c3e50; color: #ecf0f1; padding: 20px; border-radius: 10px; direction: ltr; text-align: left; overflow-x: auto; white-space: pre-wrap; font-family: 'Consolas', monospace; margin-bottom: 30px; border: 1px solid #1a252f; }
+        .result-header { background: #f1f1f1; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-right: 5px solid var(--primary); }
+        .badge { background: var(--primary); color: white; padding: 2px 10px; border-radius: 4px; font-size: 0.8rem; margin-right: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="mainContainer">
+    <h1>إضافة قصة جديدة</h1>
+    
+    <div class="input-group">
+        <label>عنوان القصة (مثل: قصة آدم عليه السلام):</label>
+        <input type="text" id="storyTitle" placeholder="أدخل عنوان القصة هنا..." oninput="updateFranco()">
+        <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 8px;">
+            اسم ملف الـ JSON المتوقع: <strong id="francoName" style="color: var(--primary);">...</strong>
+        </p>
+    </div>
+
+    <div class="input-group">
+        <label>نص القصة كاملاً:</label>
+        <textarea id="storyContent" placeholder="اكتب أو الصق نص القصة هنا..."></textarea>
+    </div>
+
+    <button class="btn btn-generate" onclick="generateStoryJSON()">توليد كود الـ JSON للقصة</button>
+</div>
+
+<div class="container" id="resultSection">
+    <h1>تم توليد القصة بنجاح ✨</h1>
+    
+    <div class="result-header">العنوان الأصلي: <span id="resArabic"></span></div>
+    <div class="result-header">اسم الملف المقترح: <span id="resFranco"></span></div>
+    
+    <h3 style="margin-top:30px;">كود الـ JSON النهائي:</h3>
+    <button class="btn btn-copy" onclick="copyCode()">نسخ الكود بالكامل</button>
+    <div class="json-box" id="jsonOutput"></div>
+    
+    <button class="btn" style="background: #95a5a6; color: white;" onclick="location.reload()">إضافة قصة أخرى</button>
+</div>
+
+<script>
+    // دالة تحويل الاسم لفرانكو (نفس منطق الأذكار لتوحيد النظام)
+    function toFranco(text) {
+        const map = {
+            'ا': 'a', 'أ': 'a', 'إ': 'e', 'آ': 'a', 'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'g', 'ح': '7', 'خ': 'kh', 
+            'د': 'd', 'ذ': 'z', 'ر': 'r', 'ز': 'z', 'س': 's', 'ش': 'sh', 'ص': 's', 
+            'ض': 'd', 'ط': 't', 'ظ': 'z', 'ع': '3', 'غ': 'gh', 'ف': 'f', 'ق': 'q', 
+            'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n', 'ه': 'h', 'و': 'w', 'ي': 'y', 'ى': 'a', 'ة': 'h', ' ': '_'
+        };
+        return text.split('').map(char => map[char] || char).join('').toLowerCase() + ".json";
+    }
+
+    function updateFranco() {
+        const title = document.getElementById('storyTitle').value;
+        document.getElementById('francoName').innerText = toFranco(title);
+    }
+
+    function generateStoryJSON() {
+        const title = document.getElementById('storyTitle').value;
+        const content = document.getElementById('storyContent').value;
+        const franco = toFranco(title);
+
+        if(!title || !content) {
+            alert("من فضلك املأ العنوان ومحتوى القصة!");
+            return;
+        }
+
+        const storyObj = {
+            "title": title,
+            "content": content
+        };
+
+        // إخفاء العرض وإظهار النتيجة
+        document.getElementById('mainContainer').style.display = 'none';
+        document.getElementById('resultSection').style.display = 'block';
+        
+        document.getElementById('resArabic').innerText = title;
+        document.getElementById('resFranco').innerText = franco;
+        document.getElementById('jsonOutput').innerText = JSON.stringify(storyObj, null, 2);
+    }
+
+    function copyCode() {
+        const text = document.getElementById('jsonOutput').innerText;
+        navigator.clipboard.writeText(text);
+        alert("تم نسخ كود القصة!");
+    }
+</script>
+
+</body>
+</html>
