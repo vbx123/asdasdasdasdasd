@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إضافة أذكار جديدة</title>
+    <style>
+        :root { --primary: #27ae60; --dark: #2c3e50; --bg: #f9f9f9; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 20px; line-height: 1.6; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--dark); }
+        
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        
+        .azkar-card { border: 2px solid #eee; padding: 20px; border-radius: 12px; margin-bottom: 20px; background: #fff; position: relative; }
+        .azkar-card h3 { margin-top: 0; color: var(--primary); font-size: 1rem; }
+
+        .btn { cursor: pointer; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; transition: 0.3s; }
+        .btn-add { background: var(--dark); color: white; width: 100%; margin-bottom: 20px; }
+        .btn-generate { background: var(--primary); color: white; width: 100%; font-size: 1.2rem; }
+        .btn-copy { background: #3498db; color: white; margin-bottom: 10px; }
+        
+        #resultSection { display: none; }
+        .json-box { background: #273c51; color: #fff; padding: 15px; border-radius: 8px; direction: ltr; text-align: left; overflow-x: auto; white-space: pre-wrap; font-family: monospace; margin-bottom: 30px; position: relative; }
+        .result-header { background: #eee; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="mainContainer">
+    <h1>إضافة مجموعة أذكار</h1>
+    
+    <div class="input-group">
+        <label>عنوان الأذكار (مثال: أذكار الصباح):</label>
+        <input type="text" id="fileTitle" placeholder="اكتب العنوان هنا..." oninput="updateFranco()">
+        <p style="font-size: 0.8rem; color: #666;">اسم الملف المقترح: <span id="francoName">...</span></p>
+    </div>
+
+    <hr>
+
+    <div id="azkarList">
+        <div class="azkar-card">
+            <h3>الذكر #1</h3>
+            <div class="input-group"><label>نص الذكر:</label><textarea class="z-text" rows="2"></textarea></div>
+            <div style="display: flex; gap: 10px;">
+                <div class="input-group" style="flex: 1;"><label>العدد:</label><input type="number" class="z-count" value="1"></div>
+                <div class="input-group" style="flex: 2;"><label>الفضل:</label><input type="text" class="z-reward"></div>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn btn-add" onclick="addNewCard()">+ إضافة ذكر آخر</button>
+    <button class="btn btn-generate" onclick="generateJSON()">توليد ملفات JSON</button>
+</div>
+
+<div class="container" id="resultSection">
+    <h1>النتيجة النهائية</h1>
+    <div class="result-header">العنوان العربي: <span id="resArabic"></span></div>
+    <div class="result-header">اسم الملف: <span id="resFranco"></span></div>
+    
+    <h3 style="margin-top:30px;">1. كود مصفوفة الأذكار (الأساسي):</h3>
+    <button class="btn btn-copy" onclick="copyCode('code1')">نسخ الكود</button>
+    <div class="json-box" id="code1"></div>
+
+    <h3>2. ملف المعلومات الكاملة (Metadata):</h3>
+    <button class="btn btn-copy" onclick="copyCode('code2')">نسخ الكود</button>
+    <div class="json-box" id="code2"></div>
+    
+    <button class="btn btn-add" onclick="location.reload()">عمل ملف جديد</button>
+</div>
+
+<script>
+    let cardCount = 1;
+
+    // قاموس بسيط للتحويل لفرانكو
+    function toFranco(text) {
+        const map = {
+            'ا': 'a', 'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'g', 'ح': '7', 'خ': 'kh', 
+            'د': 'd', 'ذ': 'z', 'ر': 'r', 'ز': 'z', 'س': 's', 'ش': 'sh', 'ص': 's', 
+            'ض': 'd', 'ط': 't', 'ظ': 'z', 'ع': '3', 'غ': 'gh', 'ف': 'f', 'ق': 'q', 
+            'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n', 'ه': 'h', 'و': 'w', 'ي': 'y', ' ': '_'
+        };
+        return text.split('').map(char => map[char] || char).join('').toLowerCase() + ".json";
+    }
+
+    function updateFranco() {
+        const title = document.getElementById('fileTitle').value;
+        document.getElementById('francoName').innerText = toFranco(title);
+    }
+
+    function addNewCard() {
+        cardCount++;
+        const cardHtml = `
+            <div class="azkar-card">
+                <h3>الذكر #${cardCount}</h3>
+                <div class="input-group"><label>نص الذكر:</label><textarea class="z-text" rows="2"></textarea></div>
+                <div style="display: flex; gap: 10px;">
+                    <div class="input-group" style="flex: 1;"><label>العدد:</label><input type="number" class="z-count" value="1"></div>
+                    <div class="input-group" style="flex: 2;"><label>الفضل:</label><input type="text" class="z-reward"></div>
+                </div>
+            </div>`;
+        document.getElementById('azkarList').insertAdjacentHTML('beforeend', cardHtml);
+    }
+
+    function generateJSON() {
+        const title = document.getElementById('fileTitle').value;
+        const franco = toFranco(title);
+        const azkarData = [];
+        
+        const texts = document.querySelectorAll('.z-text');
+        const counts = document.querySelectorAll('.z-count');
+        const rewards = document.querySelectorAll('.z-reward');
+
+        texts.forEach((t, i) => {
+            if(t.value.trim() !== "") {
+                azkarData.push({
+                    text: t.value,
+                    count: parseInt(counts[i].value),
+                    reward: rewards[i].value
+                });
+            }
+        });
+
+        const fullData = {
+            category: title,
+            fileName: franco,
+            total: azkarData.length,
+            content: azkarData
+        };
+
+        // إظهار النتائج
+        document.getElementById('mainContainer').style.display = 'none';
+        document.getElementById('resultSection').style.display = 'block';
+        
+        document.getElementById('resArabic').innerText = title;
+        document.getElementById('resFranco').innerText = franco;
+        document.getElementById('code1').innerText = JSON.stringify(azkarData, null, 2);
+        document.getElementById('code2').innerText = JSON.stringify(fullData, null, 2);
+    }
+
+    function copyCode(id) {
+        const text = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(text);
+        alert("تم نسخ الكود بنجاح!");
+    }
+</script>
+
+</body>
+</html>
